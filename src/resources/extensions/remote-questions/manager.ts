@@ -122,14 +122,19 @@ async function pollUntilDone(
   ref: import("./types.js").RemotePromptRef,
   signal?: AbortSignal,
 ): Promise<RemoteAnswer | null> {
+  let retryCount = 0;
   while (Date.now() < prompt.timeoutAt && !signal?.aborted) {
     try {
       const answer = await adapter.pollAnswer(prompt, ref);
       updatePromptRecord(prompt.id, { lastPollAt: Date.now() });
+      retryCount = 0;
       if (answer) return answer;
     } catch (err) {
-      markPromptStatus(prompt.id, "failed", sanitizeError(String((err as Error).message)));
-      return null;
+      retryCount++;
+      if (retryCount > 1) {
+        markPromptStatus(prompt.id, "failed", sanitizeError(String((err as Error).message)));
+        return null;
+      }
     }
 
     await sleep(prompt.pollIntervalMs, signal);

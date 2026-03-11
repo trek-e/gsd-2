@@ -8,7 +8,8 @@ import { CURSOR_MARKER, Editor, type EditorTheme, Key, matchesKey, truncateToWid
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { getGlobalGSDPreferencesPath, loadEffectiveGSDPreferences } from "../gsd/preferences.js";
-import { getRemoteConfigStatus, resolveRemoteConfig } from "./config.js";
+import { getRemoteConfigStatus, isValidChannelId, resolveRemoteConfig } from "./config.js";
+import { sanitizeError } from "./manager.js";
 import { getLatestPromptSummary } from "./status.js";
 
 export async function handleRemote(
@@ -37,6 +38,7 @@ async function handleSetupSlack(ctx: ExtensionCommandContext): Promise<void> {
 
   const channelId = await promptInput(ctx, "Channel ID", "Paste the Slack channel ID (e.g. C0123456789)");
   if (!channelId) return void ctx.ui.notify("Slack setup cancelled.", "info");
+  if (!isValidChannelId("slack", channelId)) return void ctx.ui.notify("Invalid Slack channel ID format — expected 9-12 uppercase alphanumeric characters.", "error");
 
   const send = await fetchJson("https://slack.com/api/chat.postMessage", {
     method: "POST",
@@ -61,15 +63,17 @@ async function handleSetupDiscord(ctx: ExtensionCommandContext): Promise<void> {
 
   const channelId = await promptInput(ctx, "Channel ID", "Paste the Discord channel ID (e.g. 1234567890123456789)");
   if (!channelId) return void ctx.ui.notify("Discord setup cancelled.", "info");
+  if (!isValidChannelId("discord", channelId)) return void ctx.ui.notify("Invalid Discord channel ID format — expected 17-20 digit numeric ID.", "error");
 
   const sendResponse = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ content: "GSD remote questions connected." }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!sendResponse.ok) {
     const body = await sendResponse.text().catch(() => "");
-    return void ctx.ui.notify(`Could not send to channel (HTTP ${sendResponse.status}): ${body}`, "error");
+    return void ctx.ui.notify(`Could not send to channel (HTTP ${sendResponse.status}): ${sanitizeError(body).slice(0, 200)}`, "error");
   }
 
   saveProviderToken("discord_bot", token);
@@ -138,7 +142,7 @@ async function handleRemoteMenu(ctx: ExtensionCommandContext): Promise<void> {
 
 async function fetchJson(url: string, init?: RequestInit): Promise<any> {
   try {
-    const response = await fetch(url, init);
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
     return await response.json();
   } catch {
     return null;

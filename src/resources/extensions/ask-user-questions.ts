@@ -104,7 +104,7 @@ export default function AskUserQuestions(pi: ExtensionAPI) {
 		],
 		parameters: AskUserQuestionsParams,
 
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			// Validation
 			if (params.questions.length === 0 || params.questions.length > 3) {
 				return errorResult("Error: questions must contain 1-3 items", params.questions);
@@ -120,6 +120,9 @@ export default function AskUserQuestions(pi: ExtensionAPI) {
 			}
 
 			if (!ctx.hasUI) {
+				const { tryRemoteQuestions } = await import("./remote-questions/send.js");
+				const remoteResult = await tryRemoteQuestions(params.questions, signal);
+				if (remoteResult) return remoteResult;
 				return errorResult("Error: UI not available (non-interactive mode)", params.questions);
 			}
 
@@ -165,10 +168,44 @@ export default function AskUserQuestions(pi: ExtensionAPI) {
 		},
 
 		renderResult(result, _options, theme) {
-			const details = result.details as AskUserQuestionsDetails | undefined;
+			const details = result.details as (AskUserQuestionsDetails & { remote?: boolean; channel?: string; timed_out?: boolean; threadUrl?: string }) | undefined;
 			if (!details) {
 				const text = result.content[0];
 				return new Text(text?.type === "text" ? text.text : "", 0, 0);
+			}
+
+			// Remote channel result
+			if (details.remote) {
+				if (details.timed_out) {
+					const channelLabel = details.channel ?? "remote";
+					return new Text(
+						`${theme.fg("warning", `${channelLabel} — timed out`)}${details.threadUrl ? theme.fg("dim", ` ${details.threadUrl}`) : ""}`,
+						0,
+						0,
+					);
+				}
+
+				const remoteResponse = details.response as import("./remote-questions/channels.js").RemoteAnswer | undefined;
+				const questions = (details.questions ?? []) as Question[];
+				const lines: string[] = [];
+				const channelLabel = details.channel ?? "remote";
+				lines.push(theme.fg("dim", channelLabel));
+				if (remoteResponse) {
+					for (const q of questions) {
+						const answer = remoteResponse.answers[q.id];
+						if (!answer) {
+							lines.push(`${theme.fg("accent", q.header)}: ${theme.fg("dim", "(no answer)")}`);
+							continue;
+						}
+						const answerText = answer.answers.length > 0 ? answer.answers.join(", ") : "(custom)";
+						let line = `${theme.fg("success", "✓ ")}${theme.fg("accent", q.header)}: ${answerText}`;
+						if (answer.user_note) {
+							line += ` ${theme.fg("muted", `[note: ${answer.user_note}]`)}`;
+						}
+						lines.push(line);
+					}
+				}
+				return new Text(lines.join("\n"), 0, 0);
 			}
 
 			if (details.cancelled || !details.response) {
@@ -177,7 +214,7 @@ export default function AskUserQuestions(pi: ExtensionAPI) {
 
 			const lines: string[] = [];
 			for (const q of details.questions) {
-				const answer = details.response.answers[q.id];
+				const answer = (details.response as RoundResult).answers[q.id];
 				if (!answer) {
 					lines.push(`${theme.fg("accent", q.header)}: ${theme.fg("dim", "(no answer)")}`);
 					continue;

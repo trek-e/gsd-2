@@ -54,7 +54,7 @@ export function expandPath(filePath: string): string {
  */
 function normalizeMsysPath(p: string): string {
 	if (process.platform === "win32" && /^\/[a-zA-Z]\//.test(p)) {
-		return `${p[1].toUpperCase()}:\\${p.slice(3).replace(/\//g, "\\")}`;
+		return `${p[1]!.toUpperCase()}:\\${p.slice(3).replace(/\//g, "\\")}`;
 	}
 	return p;
 }

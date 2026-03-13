@@ -55,7 +55,7 @@ import {
   initMetrics, resetMetrics, snapshotUnitMetrics, getLedger,
   getProjectTotals, formatCost, formatTokenCount,
 } from "./metrics.js";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { readdirSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { execSync, execFileSync } from "node:child_process";
 import {
@@ -2796,7 +2796,7 @@ function verifyExpectedArtifact(unitType: string, unitId: string, base: string):
 export function writeBlockerPlaceholder(unitType: string, unitId: string, base: string, reason: string): string | null {
   const absPath = resolveExpectedArtifactPath(unitType, unitId, base);
   if (!absPath) return null;
-  const dir = absPath.substring(0, absPath.lastIndexOf("/"));
+  const dir = dirname(absPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const content = [
     `# BLOCKER — auto-mode recovery failed`,

@@ -340,7 +340,8 @@ export function updateProgressWidget(
             let meta = theme.fg("dim", `${done}/${total} slices`);
 
             if (activeSliceTasks && activeSliceTasks.total > 0) {
-              meta += theme.fg("dim", `  ·  task ${activeSliceTasks.done + 1}/${activeSliceTasks.total}`);
+              const taskNum = Math.min(activeSliceTasks.done + 1, activeSliceTasks.total);
+              meta += theme.fg("dim", `  ·  task ${taskNum}/${activeSliceTasks.total}`);
             }
 
             lines.push(truncateToWidth(`${pad}${bar}  ${meta}`, width));

@@ -72,17 +72,17 @@ function writeLock(base: string, unitType: string, unitId: string, completedUnit
   );
 }
 
-function writePausedSession(base: string): void {
+function writePausedSession(base: string, milestoneId = "M001", stepMode = false): void {
   const runtimeDir = join(base, ".gsd", "runtime");
   mkdirSync(runtimeDir, { recursive: true });
   writeFileSync(
     join(runtimeDir, "paused-session.json"),
-    JSON.stringify({ milestoneId: "M001", originalBasePath: base, stepMode: false }, null, 2),
+    JSON.stringify({ milestoneId, originalBasePath: base, stepMode }, null, 2),
     "utf-8",
   );
 }
 
-test("direct /gsd auto stale complete repo yields stale classification with no recovery messaging payload", async () => {
+test("direct /gsd auto stale complete repo yields stale classification with no recovery payload", async () => {
   const base = makeTmpBase();
   try {
     writeRoadmap(base, true);
@@ -98,11 +98,11 @@ test("direct /gsd auto stale complete repo yields stale classification with no r
   }
 });
 
-test("direct /gsd auto paused-session metadata remains recoverable", async () => {
+test("direct /gsd auto paused-session metadata remains recoverable when work is unfinished", async () => {
   const base = makeTmpBase();
   try {
     writeRoadmap(base, false);
-    writePausedSession(base);
+    writePausedSession(base, "M001", false);
     writeLock(base, "execute-task", "M001/S01/T01", 1);
 
     const assessment = await assessInterruptedSession(base);
@@ -111,4 +111,25 @@ test("direct /gsd auto paused-session metadata remains recoverable", async () =>
   } finally {
     cleanup(base);
   }
+});
+
+test("direct /gsd auto stale paused-session metadata is treated as stale when no resumable work remains", async () => {
+  const base = makeTmpBase();
+  try {
+    writeRoadmap(base, true);
+    writeCompleteArtifacts(base);
+    writePausedSession(base, "M999", true);
+
+    const assessment = await assessInterruptedSession(base);
+    assert.equal(assessment.classification, "stale");
+    assert.equal(assessment.hasResumableDiskState, false);
+  } finally {
+    cleanup(base);
+  }
+});
+
+test("auto module imports successfully after interrupted-session changes", async () => {
+  const mod = await import(`../auto.ts?ts=${Date.now()}-${Math.random()}`);
+  assert.equal(typeof mod.startAuto, "function");
+  assert.equal(typeof mod.pauseAuto, "function");
 });

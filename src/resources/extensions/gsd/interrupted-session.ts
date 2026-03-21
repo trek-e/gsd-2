@@ -145,7 +145,22 @@ export async function assessInterruptedSession(
     };
   }
 
-  if (lock && artifactSatisfied && !pausedSession) {
+  if (!hasResumableDiskState && pausedSession && !lock && recoveryToolCallCount === 0) {
+    return {
+      classification: "stale",
+      lock,
+      pausedSession,
+      state,
+      recovery,
+      recoveryPrompt,
+      recoveryToolCallCount,
+      artifactSatisfied,
+      hasResumableDiskState,
+      isBootstrapCrash: false,
+    };
+  }
+
+  if (lock && artifactSatisfied && !hasResumableDiskState && recoveryToolCallCount === 0) {
     return {
       classification: "stale",
       lock,
@@ -161,7 +176,9 @@ export async function assessInterruptedSession(
   }
 
   const hasStrongRecoverySignal =
-    !!pausedSession || recoveryToolCallCount > 0 || hasResumableDiskState;
+    (pausedSession && hasResumableDiskState) ||
+    recoveryToolCallCount > 0 ||
+    hasResumableDiskState;
 
   return {
     classification: hasStrongRecoverySignal ? "recoverable" : "stale",

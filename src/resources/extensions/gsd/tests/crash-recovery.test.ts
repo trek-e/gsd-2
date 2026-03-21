@@ -19,8 +19,8 @@ import {
   isBootstrapCrashLock,
   readPausedSessionMetadata,
 } from "../interrupted-session.ts";
-import type { GSDState } from "../types.ts";
 import { gsdRoot } from "../paths.ts";
+import type { GSDState } from "../types.ts";
 
 function makeTmpBase(): string {
   const base = join(tmpdir(), `gsd-test-${randomUUID()}`);
@@ -98,12 +98,12 @@ function writeCompleteMilestoneSummary(base: string): void {
   writeFileSync(join(milestoneDir, "M001-SUMMARY.md"), "# Milestone Summary\nDone.\n", "utf-8");
 }
 
-function writePausedSession(base: string, milestoneId = "M001"): void {
+function writePausedSession(base: string, milestoneId = "M001", stepMode = false): void {
   const runtimeDir = join(base, ".gsd", "runtime");
   mkdirSync(runtimeDir, { recursive: true });
   writeFileSync(
     join(runtimeDir, "paused-session.json"),
-    JSON.stringify({ milestoneId, originalBasePath: base, stepMode: false }, null, 2),
+    JSON.stringify({ milestoneId, originalBasePath: base, stepMode }, null, 2),
     "utf-8",
   );
 }
@@ -180,11 +180,12 @@ test("assessInterruptedSession classifies stale complete repo as stale and suppr
   }
 });
 
-test("assessInterruptedSession suppresses prompt when expected artifact already exists", async () => {
+test("assessInterruptedSession suppresses prompt when expected artifact already exists and no resumable state remains", async () => {
   const base = makeTmpBase();
   try {
     writeRoadmap(base, true);
     writeCompleteSliceArtifacts(base);
+    writeCompleteMilestoneSummary(base);
     writeTestLock(base, "complete-slice", "M001/S01", 1);
 
     const assessment = await assessInterruptedSession(base);
@@ -195,15 +196,32 @@ test("assessInterruptedSession suppresses prompt when expected artifact already 
   }
 });
 
-test("assessInterruptedSession keeps paused-session resume recoverable", async () => {
+test("assessInterruptedSession keeps paused-session resume recoverable when disk state is unfinished", async () => {
   const base = makeTmpBase();
   try {
+    writeRoadmap(base, false);
     writePausedSession(base);
     writeTestLock(base, "execute-task", "M001/S01/T01", 1);
 
     const assessment = await assessInterruptedSession(base);
     assert.equal(assessment.classification, "recoverable");
     assert.equal(assessment.pausedSession?.milestoneId, "M001");
+  } finally {
+    cleanup(base);
+  }
+});
+
+test("assessInterruptedSession marks stale paused-session metadata as stale when no work remains", async () => {
+  const base = makeTmpBase();
+  try {
+    writeRoadmap(base, true);
+    writeCompleteSliceArtifacts(base);
+    writeCompleteMilestoneSummary(base);
+    writePausedSession(base, "M999");
+
+    const assessment = await assessInterruptedSession(base);
+    assert.equal(assessment.classification, "stale");
+    assert.equal(assessment.hasResumableDiskState, false);
   } finally {
     cleanup(base);
   }

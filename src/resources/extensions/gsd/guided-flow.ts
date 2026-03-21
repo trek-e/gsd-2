@@ -882,11 +882,14 @@ export async function showSmartEntry(
     clearLock(basePath);
   } else if (interrupted.classification === "recoverable") {
     if (interrupted.lock) clearLock(basePath);
+    const resumeLabel = interrupted.pausedSession?.stepMode
+      ? "Resume with /gsd next"
+      : "Resume with /gsd auto";
     const resume = await showNextAction(ctx, {
       title: "GSD — Interrupted Session Detected",
       summary: formatInterruptedSessionSummary(interrupted),
       actions: [
-        { id: "resume", label: "Resume with /gsd auto", description: "Pick up where it left off", recommended: true },
+        { id: "resume", label: resumeLabel, description: "Pick up where it left off", recommended: true },
         { id: "continue", label: "Continue manually", description: "Open the wizard as normal" },
       ],
     });

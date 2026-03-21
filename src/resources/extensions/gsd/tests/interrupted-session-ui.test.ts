@@ -57,12 +57,22 @@ function writeCompleteArtifacts(base: string): void {
   writeFileSync(join(milestoneDir, "M001-SUMMARY.md"), "# Milestone Summary\nDone.\n", "utf-8");
 }
 
-function writePausedSession(base: string): void {
+function writePausedSession(base: string, stepMode = false): void {
   const runtimeDir = join(base, ".gsd", "runtime");
   mkdirSync(runtimeDir, { recursive: true });
   writeFileSync(
     join(runtimeDir, "paused-session.json"),
-    JSON.stringify({ milestoneId: "M001", originalBasePath: base, stepMode: false }, null, 2),
+    JSON.stringify({ milestoneId: "M001", originalBasePath: base, stepMode }, null, 2),
+    "utf-8",
+  );
+}
+
+function writeStalePausedSession(base: string, stepMode = false): void {
+  const runtimeDir = join(base, ".gsd", "runtime");
+  mkdirSync(runtimeDir, { recursive: true });
+  writeFileSync(
+    join(runtimeDir, "paused-session.json"),
+    JSON.stringify({ milestoneId: "M999", originalBasePath: base, stepMode }, null, 2),
     "utf-8",
   );
 }
@@ -112,11 +122,27 @@ test("guided-flow paused-session scenario classifies as recoverable so resume re
   }
 });
 
-test("guided-flow source gates interrupted-session UI on assessment classification", () => {
+test("guided-flow stale paused-session scenario is suppressed when no resumable work remains", async () => {
+  const base = makeTmpBase();
+  try {
+    writeRoadmap(base, true);
+    writeCompleteArtifacts(base);
+    writeStalePausedSession(base, true);
+
+    const assessment = await assessInterruptedSession(base);
+    assert.equal(assessment.classification, "stale");
+    assert.equal(assessment.hasResumableDiskState, false);
+  } finally {
+    cleanup(base);
+  }
+});
+
+test("guided-flow source uses step-aware resume label and shared assessment", () => {
   const source = readFileSync(join(import.meta.dirname, "..", "guided-flow.ts"), "utf-8");
   assert.ok(source.includes('const interrupted = await assessInterruptedSession(basePath);'));
   assert.ok(source.includes('if (interrupted.classification === "running")'));
   assert.ok(source.includes('if (interrupted.classification === "stale")'));
-  assert.ok(source.includes('} else if (interrupted.classification === "recoverable")'));
+  assert.ok(source.includes('resumeLabel = interrupted.pausedSession?.stepMode'));
+  assert.ok(source.includes('"Resume with /gsd next"'));
   assert.ok(source.includes('await startAuto(ctx, pi, basePath, false, { interrupted });'));
 });

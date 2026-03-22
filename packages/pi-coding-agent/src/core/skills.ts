@@ -5,6 +5,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "pat
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { toPosixPath } from "../utils/path-display.js";
 import type { ResourceDiagnostic } from "./diagnostics.js";
+import { CONFIG_DIR_NAME } from "../config.js";
 
 /**
  * The standard ecosystem skills directory used by skills.sh and the
@@ -17,6 +18,12 @@ export const ECOSYSTEM_SKILLS_DIR = join(homedir(), ".agents", "skills");
  * The standard project-level skills directory (`.agents/skills/` relative to cwd).
  */
 export const ECOSYSTEM_PROJECT_SKILLS_DIR = ".agents";
+
+/**
+ * Legacy skills directory (~/.gsd/agent/skills/ or ~/.pi/agent/skills/).
+ * Read as a fallback so existing installs don't lose skills before migration runs.
+ */
+const LEGACY_SKILLS_DIR = join(homedir(), CONFIG_DIR_NAME, "agent", "skills");
 
 /** Max name length per spec */
 const MAX_NAME_LENGTH = 64;
@@ -416,6 +423,14 @@ export function loadSkills(options: LoadSkillsOptions = {}): LoadSkillsResult {
 		addSkills(loadSkillsFromDirInternal(ECOSYSTEM_SKILLS_DIR, "user", true));
 		// Primary project: .agents/skills/ — standard project-level location
 		addSkills(loadSkillsFromDirInternal(resolve(cwd, ECOSYSTEM_PROJECT_SKILLS_DIR, "skills"), "project", true));
+
+		// Legacy fallback: read skills from ~/.gsd/agent/skills/ so existing
+		// installs keep working until the one-time migration in resource-loader
+		// copies them to ~/.agents/skills/. Collision dedup above means already-
+		// migrated skills won't load twice.
+		if (LEGACY_SKILLS_DIR !== ECOSYSTEM_SKILLS_DIR && existsSync(LEGACY_SKILLS_DIR)) {
+			addSkills(loadSkillsFromDirInternal(LEGACY_SKILLS_DIR, "user", true));
+		}
 	}
 
 	const userSkillsDir = ECOSYSTEM_SKILLS_DIR;

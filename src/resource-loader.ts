@@ -393,6 +393,10 @@ export function initResources(agentDir: string): void {
   // Skills are no longer force-synced here. Users install skills via the
   // skills.sh CLI (`npx skills add <repo>`) into ~/.agents/skills/ which
   // is the industry-standard Agent Skills ecosystem directory.
+  //
+  // Migrate any user-customized skills from the legacy ~/.gsd/agent/skills/
+  // directory into ~/.agents/skills/ so they aren't silently lost on upgrade.
+  migrateSkillsToEcosystemDir(agentDir)
 
   // Sync GSD-WORKFLOW.md to agentDir as a fallback for when GSD_WORKFLOW_PATH
   // env var is not set (e.g. fork/dev builds, alternative entry points).
@@ -407,6 +411,58 @@ export function initResources(agentDir: string): void {
 
   writeManagedResourceManifest(agentDir)
   ensureRegistryEntries(join(agentDir, 'extensions'))
+}
+
+// ─── Legacy Skill Migration ──────────────────────────────────────────────────────
+
+/**
+ * One-time migration: copy user-customized skills from the old
+ * ~/.gsd/agent/skills/ directory into ~/.agents/skills/.
+ *
+ * The migration is conservative:
+ *  - Only skill directories containing a SKILL.md are considered.
+ *  - Copies, does not move — the old directory stays intact so downgrading
+ *    to a pre-migration GSD version still works.
+ *  - Collision-safe — if a skill name already exists in the target, the
+ *    existing ecosystem skill wins (user may have already installed a newer
+ *    version via skills.sh).
+ *  - Writes a `.migrated-to-agents` marker inside the legacy directory so
+ *    the migration runs at most once.
+ */
+function migrateSkillsToEcosystemDir(agentDir: string): void {
+  const legacyDir = join(agentDir, 'skills')
+  const markerPath = join(legacyDir, '.migrated-to-agents')
+
+  // Already migrated or no legacy dir — nothing to do
+  if (!existsSync(legacyDir) || existsSync(markerPath)) return
+
+  const ecosystemDir = join(homedir(), '.agents', 'skills')
+  mkdirSync(ecosystemDir, { recursive: true })
+
+  try {
+    const entries = readdirSync(legacyDir, { withFileTypes: true })
+    let migrated = 0
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const skillMd = join(legacyDir, entry.name, 'SKILL.md')
+      if (!existsSync(skillMd)) continue
+
+      const target = join(ecosystemDir, entry.name)
+      if (existsSync(target)) continue // ecosystem version wins
+
+      try {
+        cpSync(join(legacyDir, entry.name), target, { recursive: true })
+        migrated++
+      } catch {
+        // non-fatal — skip this skill
+      }
+    }
+
+    // Drop marker whether or not anything was copied, so we don't re-scan
+    try { writeFileSync(markerPath, `Migrated ${migrated} skill(s) to ${ecosystemDir} on ${new Date().toISOString()}\n`) } catch { /* non-fatal */ }
+  } catch {
+    // can't read legacy dir — skip silently
+  }
 }
 
 export function hasStaleCompiledExtensionSiblings(extensionsDir: string): boolean {

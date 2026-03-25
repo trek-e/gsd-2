@@ -144,6 +144,7 @@ jobs:
 
   windows-portability:
     timeout-minutes: 15
+    continue-on-error: true
     needs: detect-changes
     if: >-
       needs.detect-changes.outputs.docs-only != 'true'

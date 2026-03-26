@@ -279,6 +279,44 @@ describe("workflow-logger", () => {
     });
   });
 
+  describe("audit log persistence", () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = makeTempDir("wl-audit-");
+    });
+
+    afterEach(() => {
+      setLogBasePath("");
+      cleanup(dir);
+    });
+
+    test("writes entry to .gsd/audit-log.jsonl after setLogBasePath", () => {
+      setLogBasePath(dir);
+      logWarning("engine", "audit test entry");
+
+      const auditPath = join(dir, ".gsd", "audit-log.jsonl");
+      assert.ok(existsSync(auditPath), "audit-log.jsonl should exist");
+      const content = readFileSync(auditPath, "utf-8");
+      const entry = JSON.parse(content.trim());
+      assert.equal(entry.severity, "warn");
+      assert.equal(entry.component, "engine");
+      assert.equal(entry.message, "audit test entry");
+    });
+
+    test("_resetLogs does not clear the audit base path", () => {
+      setLogBasePath(dir);
+      _resetLogs();
+      logWarning("engine", "post-reset entry");
+
+      const auditPath = join(dir, ".gsd", "audit-log.jsonl");
+      assert.ok(existsSync(auditPath), "audit-log.jsonl should exist after _resetLogs");
+      const content = readFileSync(auditPath, "utf-8");
+      const entry = JSON.parse(content.trim());
+      assert.equal(entry.message, "post-reset entry");
+    });
+  });
+
   describe("stderr output", () => {
     test("writes WARN prefix to stderr for warnings", (t) => {
       const written: string[] = [];

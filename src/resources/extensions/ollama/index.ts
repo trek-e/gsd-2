@@ -61,8 +61,13 @@ async function probeAndRegister(pi: ExtensionAPI): Promise<boolean> {
 
 	const baseUrl = client.getOllamaHost();
 
+	// Use authMode "apiKey" with a dummy key (#3440).
+	// authMode "none" requires a custom streamSimple handler, but Ollama uses
+	// the standard OpenAI-compatible streaming endpoint. Ollama ignores the
+	// Authorization header so the dummy key is harmless.
 	pi.registerProvider("ollama", {
-		authMode: "none",
+		authMode: "apiKey",
+		apiKey: "ollama",
 		baseUrl,
 		api: "ollama-chat",
 		streamSimple: streamOllamaChat,

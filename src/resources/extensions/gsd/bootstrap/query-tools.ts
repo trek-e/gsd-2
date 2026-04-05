@@ -15,10 +15,7 @@ export function registerQueryTools(pi: ExtensionAPI): void {
       "Use this instead of querying .gsd/gsd.db directly via sqlite3 or better-sqlite3.",
     promptSnippet: "Get milestone status, slice statuses, and task counts for a given milestoneId",
     promptGuidelines: [
-      "Use this tool — not sqlite3 or better-sqlite3 — whenever you need to inspect milestone or slice state.",
-      "Returns milestone metadata (title, status, created_at, completed_at) and a slices array.",
-      "Each slice entry includes id, status, and task counts (total, done, pending).",
-      "Returns an error message if the milestone does not exist or the database is unavailable.",
+      "Use this tool — not sqlite3 or better-sqlite3 — to inspect milestone or slice state from the DB.",
     ],
     parameters: Type.Object({
       milestoneId: Type.String({ description: "Milestone ID to query (e.g. M001)" }),

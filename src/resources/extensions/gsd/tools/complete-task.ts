@@ -45,6 +45,18 @@ export interface CompleteTaskResult {
 import type { TaskRow } from "../gsd-db.js";
 
 /**
+ * Normalize a list parameter that may arrive as a string (newline-delimited
+ * bullet list from the LLM) into a string array (#3361).
+ */
+function normalizeListParam(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string" && value.trim()) {
+    return value.split(/\n/).map(s => s.replace(/^[\s\-*•]+/, "").trim()).filter(Boolean);
+  }
+  return [];
+}
+
+/**
  * Build a TaskRow-shaped object from CompleteTaskParams so the unified
  * renderSummaryContent() can be used at completion time (#2720).
  */
@@ -63,8 +75,8 @@ function paramsToTaskRow(params: CompleteTaskParams, completedAt: string): TaskR
     blocker_discovered: params.blockerDiscovered ?? false,
     deviations: params.deviations ?? "",
     known_issues: params.knownIssues ?? "",
-    key_files: params.keyFiles ?? [],
-    key_decisions: params.keyDecisions ?? [],
+    key_files: normalizeListParam(params.keyFiles),
+    key_decisions: normalizeListParam(params.keyDecisions),
     full_summary_md: "",
     description: "",
     estimate: "",

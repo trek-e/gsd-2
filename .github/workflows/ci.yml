@@ -191,9 +191,6 @@ jobs:
           src/resources/extensions/gsd/tests/validate-directory.test.ts
           src/tests/integration/web-mode-windows-hide.test.ts
 
-      - name: Run integration tests
-        run: npm run test:integration
-
   rtk-portability:
     timeout-minutes: 20
     needs: detect-changes

@@ -7,7 +7,7 @@ import { KeybindingsManager } from "@gsd/agent-core";
 import {
 	SessionSelectorComponent,
 } from "@gsd/pi-coding-agent";
-import type { SessionInfo } from "@gsd/pi-coding-agent";
+import type { SessionInfo } from "@gsd/agent-types";
 
 // SessionListProgress is not exported from pi-coding-agent index in 0.67.2
 type SessionListProgress = (loaded: number, total: number) => void;

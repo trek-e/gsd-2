@@ -4,7 +4,7 @@
 
 import type { Api, Model } from "@gsd/pi-ai";
 import { fuzzyFilter } from "@gsd/pi-tui";
-import type { ModelRegistry } from "@gsd/pi-coding-agent";
+import type { ModelRegistry } from "@gsd/agent-types";
 
 export interface ListModelsOptions {
 	/** Include discovered models in output */

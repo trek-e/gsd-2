@@ -7,7 +7,7 @@
 
 import type { AgentMessage, ThinkingLevel } from "@gsd/pi-agent-core";
 import type { ImageContent, Model } from "@gsd/pi-ai";
-import type { SessionStats, BashResult, CompactionResult } from "@gsd/pi-coding-agent";
+import type { SessionStats, BashResult, CompactionResult } from "@gsd/agent-types";
 
 // ============================================================================
 // RPC Protocol Versioning

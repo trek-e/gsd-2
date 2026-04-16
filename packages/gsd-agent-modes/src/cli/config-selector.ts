@@ -8,7 +8,7 @@ import {
 	initTheme,
 	stopThemeWatcher,
 } from "@gsd/pi-coding-agent";
-import type { ResolvedPaths, SettingsManager } from "@gsd/pi-coding-agent";
+import type { ResolvedPaths, SettingsManager } from "@gsd/agent-types";
 
 export interface ConfigSelectorOptions {
 	resolvedPaths: ResolvedPaths;

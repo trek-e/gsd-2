@@ -7,7 +7,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import type { AgentEvent, AgentMessage, ThinkingLevel } from "@gsd/pi-agent-core";
 import type { ImageContent } from "@gsd/pi-ai";
-import type { SessionStats, BashResult, CompactionResult } from "@gsd/pi-coding-agent";
+import type { SessionStats, BashResult, CompactionResult } from "@gsd/agent-types";
 import { attachJsonlLineReader, serializeJsonLine } from "./jsonl.js";
 import type { RpcCommand, RpcInitResult, RpcResponse, RpcSessionState, RpcSlashCommand } from "./rpc-types.js";
 

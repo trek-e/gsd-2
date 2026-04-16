@@ -6,7 +6,7 @@
  * requiring a direct import of the (removed) `theme` value export.
  */
 
-import { type Theme } from "@gsd/pi-coding-agent";
+import type { Theme } from "@gsd/agent-types";
 
 // Use the same Symbol key that pi-coding-agent uses for the global theme singleton.
 const THEME_KEY = Symbol.for("@gsd/pi-coding-agent:theme");

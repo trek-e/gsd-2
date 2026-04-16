@@ -13,9 +13,9 @@
 
 import * as crypto from "node:crypto";
 import type { AgentSession } from "@gsd/agent-core";
-import type { ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions } from "@gsd/pi-coding-agent";
+import type { ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions } from "@gsd/agent-types";
 import { InteractiveMode } from "../interactive/interactive-mode.js";
-import type { Theme } from "@gsd/pi-coding-agent";
+import type { Theme } from "@gsd/agent-types";
 import { theme } from "../../theme.js";
 import { createDefaultCommandContextActions } from "../shared/command-context-actions.js";
 import { attachJsonlLineReader, serializeJsonLine } from "./jsonl.js";

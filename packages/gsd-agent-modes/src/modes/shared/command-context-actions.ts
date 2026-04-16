@@ -7,7 +7,7 @@
  */
 
 import type { AgentSession } from "@gsd/agent-core";
-import type { ExtensionCommandContextActions } from "@gsd/pi-coding-agent";
+import type { ExtensionCommandContextActions } from "@gsd/agent-types";
 
 /**
  * Create the default set of command context actions that simply delegate

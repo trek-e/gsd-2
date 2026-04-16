@@ -1607,10 +1607,10 @@ export class AgentSession {
 
 		this._reconnectToAgent();
 
-		// Emit session_switch event with reason "new" to extensions
+		// Emit session_start event with reason "new" to extensions
 		if (this._extensionRunner) {
 			await this._extensionRunner.emit({
-				type: "session_switch",
+				type: "session_start",
 				reason: "new",
 				previousSessionFile,
 			});
@@ -2430,10 +2430,10 @@ export class AgentSession {
 		// Reload messages
 		const sessionContext = this.sessionManager.buildSessionContext();
 
-		// Emit session_switch event to extensions
+		// Emit session_start event to extensions
 		if (this._extensionRunner) {
 			await this._extensionRunner.emit({
-				type: "session_switch",
+				type: "session_start",
 				reason: "resume",
 				previousSessionFile,
 			});
@@ -2531,10 +2531,11 @@ export class AgentSession {
 		// Reload messages from entries (works for both file and in-memory mode)
 		const sessionContext = this.sessionManager.buildSessionContext();
 
-		// Emit session_fork event to extensions (after fork completes)
+		// Emit session_start event with reason "fork" to extensions (after fork completes)
 		if (this._extensionRunner) {
 			await this._extensionRunner.emit({
-				type: "session_fork",
+				type: "session_start",
+				reason: "fork",
 				previousSessionFile,
 			});
 		}

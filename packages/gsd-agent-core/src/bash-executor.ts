@@ -10,6 +10,7 @@ import { randomBytes } from "node:crypto";
 import { createWriteStream, unlinkSync, type WriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { type ChildProcess, spawn } from "child_process";
 
 /** Track temp files created by bash execution for cleanup on exit. */
@@ -35,11 +36,23 @@ import { getShellConfig, getShellEnv, killProcessTree, DEFAULT_MAX_BYTES, trunca
 // sanitizeCommand was removed from @gsd/pi-coding-agent 0.67.2. The function
 // stripped null bytes and other control characters that could confuse the shell.
 // Phase 09: move to @gsd/agent-types or inline permanently.
-function sanitizeCommand(cmd: string): string {
+export function sanitizeCommand(cmd: string): string {
 	// Remove null bytes and ASCII control characters (except newline/tab which are valid in scripts)
 	// eslint-disable-next-line no-control-regex -- intentional: sanitizing shell command input
 	return cmd.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 }
+
+/**
+ * Dynamically import a sibling module relative to an extension's import.meta.url.
+ * Replaces the removed @gsd/pi-coding-agent importExtensionModule (0.67.2).
+ *
+ * Usage: const mod = await importExtensionModule<typeof import("./foo.js")>(import.meta.url, "./foo.js");
+ */
+export async function importExtensionModule<T = unknown>(parentModuleUrl: string, specifier: string): Promise<T> {
+	const resolvedPath = fileURLToPath(new URL(specifier, parentModuleUrl));
+	return import(resolvedPath) as Promise<T>;
+}
+
 import type { BashOperations } from "@gsd/agent-types";
 
 // ============================================================================

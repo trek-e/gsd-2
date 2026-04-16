@@ -31,7 +31,7 @@ export {
 	type SessionStateChangeReason,
 } from "./agent-session.js";
 export { CompactionOrchestrator } from "./compaction-orchestrator.js";
-export { executeBash, executeBashWithOperations, type BashExecutorOptions, type BashResult } from "./bash-executor.js";
+export { executeBash, executeBashWithOperations, importExtensionModule, sanitizeCommand, type BashExecutorOptions, type BashResult } from "./bash-executor.js";
 export { buildSystemPrompt, type BuildSystemPromptOptions } from "./system-prompt.js";
 export { prepareLifecycleHooks, runLifecycleHooks, type PackageLifecycleHooksOptions, type PrepareLifecycleHooksOptions, type LifecycleHooksRunResult, type LifecycleHooksTarget } from "./lifecycle-hooks.js";
 export { ArtifactManager } from "./artifact-manager.js";

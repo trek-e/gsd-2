@@ -8,13 +8,11 @@
 import type {
 	AssistantMessage,
 	AssistantMessageEvent,
-	ServerToolUseContent,
 	StopReason,
 	TextContent,
 	ThinkingContent,
 	ToolCall,
 	Usage,
-	WebSearchResultContent,
 } from "@gsd/pi-ai";
 import type { BetaContentBlock, BetaRawMessageStreamEvent, NonNullableUsage } from "./sdk-types.js";
 
@@ -172,7 +170,7 @@ function toolCallFromBlock(
  */
 export function mapContentBlock(
 	block: BetaContentBlock,
-): TextContent | ThinkingContent | ToolCall | ServerToolUseContent | WebSearchResultContent {
+): TextContent | ThinkingContent | ToolCall {
 	switch (block.type) {
 		case "text":
 			return { type: "text", text: block.text } satisfies TextContent;
@@ -188,19 +186,18 @@ export function mapContentBlock(
 			return toolCallFromBlock(block.id, block.name, block.input);
 
 		case "server_tool_use":
+			// ServerToolUseContent removed from pi-ai in pi 0.67.2 — represent as text
 			return {
-				type: "serverToolUse",
-				id: block.id,
-				name: block.name,
-				input: block.input,
-			} satisfies ServerToolUseContent;
+				type: "text",
+				text: `[server tool use: ${(block as Record<string, unknown>).name ?? "unknown"}]`,
+			} satisfies TextContent;
 
 		case "web_search_tool_result":
+			// WebSearchResultContent removed from pi-ai in pi 0.67.2 — represent as text
 			return {
-				type: "webSearchResult",
-				toolUseId: block.tool_use_id,
-				content: block.content,
-			} satisfies WebSearchResultContent;
+				type: "text",
+				text: `[web search result]`,
+			} satisfies TextContent;
 
 		default: {
 			const unknown = block as Record<string, unknown>;
@@ -325,15 +322,7 @@ export class PartialMessageBuilder {
 					this.partial.content.push(toolCallFromBlock(block.id, block.name, {}));
 					return { type: "toolcall_start", contentIndex, partial: this.partial };
 				}
-				if (block.type === "server_tool_use") {
-					this.partial.content.push({
-						type: "serverToolUse",
-						id: block.id,
-						name: block.name,
-						input: block.input,
-					});
-					return { type: "server_tool_use", contentIndex, partial: this.partial };
-				}
+				// server_tool_use removed from pi-ai content types in pi 0.67.2 — skip
 				return null;
 			}
 
@@ -390,7 +379,8 @@ export class PartialMessageBuilder {
 							// malformation explicitly so downstream consumers can
 							// distinguish this from a healthy tool completion (#2574).
 							block.arguments = { _raw: jsonStr };
-							return { type: "toolcall_end", contentIndex, toolCall: block, partial: this.partial, malformedArguments: true };
+							// malformedArguments removed from toolcall_end event in pi 0.67.2
+							return { type: "toolcall_end", contentIndex, toolCall: block, partial: this.partial };
 						}
 					}
 					return { type: "toolcall_end", contentIndex, toolCall: block, partial: this.partial };

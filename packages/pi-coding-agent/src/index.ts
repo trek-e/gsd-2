@@ -358,6 +358,10 @@ export { copyToClipboard } from "./utils/clipboard.js";
 export { parseFrontmatter, stripFrontmatter } from "./utils/frontmatter.js";
 // Shell utilities
 export { getShellConfig } from "./utils/shell.js";
+// Extension sort (needed by @gsd/agent-core resource-loader)
+export { sortExtensionPaths } from "./core/extensions/extension-sort.js";
+// JSONL serialization utilities (needed by @gsd/agent-core headless-ui and headless-answers)
+export { serializeJsonLine, attachJsonlLineReader } from "./modes/rpc/jsonl.js";
 // GSD additions — symbols needed by @gsd/agent-core and @gsd/agent-modes
 // Config utilities needed by @gsd/agent-core
 export { getDocsPath, getExamplesPath, getReadmePath, getExportTemplateDir } from "./config.js";
